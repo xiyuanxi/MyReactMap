@@ -5,61 +5,94 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
+  AsyncStorage,
 } from 'react-native';
 import { WebBrowser } from 'expo';
+import LocationA from '../components/LocationA'
 
 import { MonoText } from '../components/StyledText';
 
+
+const GOOGLE_MAPS_APIKEY = 'AIzaSyDq2gbbHtbzWzs3FFLp94bHyJYb4rloisU'
+// var DeviceInfo = require('react-native-device-info');
+
+const PEAKPOWER_MOBILE_ID =  "PEAK_POWER_MOBILE_DEVICE_ID";
+
 export default class HomeScreen extends React.Component {
+  constructor(props) {
+    super(props);
+
+    // AsyncStorage.getItem('DeviceId').then((value) => {
+    //   console.log(value)
+    //   this.setState({ deviceId: value })
+    //   // if (this.state.deviceId != value) {
+    //   //   console.log("1 this.state.deviceId =" +this.state.deviceId)
+    //   //   this.setState({ deviceId: value })
+    //   // } else {
+    //   //   console.log("2 this.state.deviceId =" +this.state.deviceId)
+    //   // }
+    // })
+  }
+  // deviceId = "";
+  state = {
+    deviceId: "",
+    inputDeviceId: null
+  };
+
   static navigationOptions = {
     header: null,
   };
 
+  handleDeviceId = (text) => {
+    this.setState({ inputDeviceId: text })
+  }
+
+  setDeviceId = (text) => {
+    AsyncStorage.setItem(PEAKPOWER_MOBILE_ID, text);
+    // this.deviceId = text;
+    this.setState({ deviceId: text })
+  }
+
+  componentDidMount = () => {
+    AsyncStorage.getItem(PEAKPOWER_MOBILE_ID).then((value) => {
+      console.log(value)
+      if(value) this.setState({ deviceId: value })
+    })
+  }
+
   render() {
+    // DeviceInfo = require('react-native-device-info');
+    // const deviceId = DeviceInfo.getUniqueID()
+   
     return (
       <View style={styles.container}>
-        <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-          <View style={styles.welcomeContainer}>
-            <Image
-              source={
-                __DEV__
-                  ? require('../assets/images/robot-dev.png')
-                  : require('../assets/images/robot-prod.png')
-              }
-              style={styles.welcomeImage}
-            />
-          </View>
-
-          <View style={styles.getStartedContainer}>
-            {this._maybeRenderDevelopmentModeWarning()}
-
-            <Text style={styles.getStartedText}>Get started by opening</Text>
-
-            <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
-              <MonoText style={styles.codeHighlightText}>screens/HomeScreen.js</MonoText>
-            </View>
-
-            <Text style={styles.getStartedText}>
-              Change this text and your app will automatically reload.
-            </Text>
-          </View>
-
-          <View style={styles.helpContainer}>
-            <TouchableOpacity onPress={this._handleHelpPress} style={styles.helpLink}>
-              <Text style={styles.helpLinkText}>Help, it didn’t automatically reload!</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-
-        <View style={styles.tabBarInfoContainer}>
-          <Text style={styles.tabBarInfoText}>This is a tab bar. You can edit it in:</Text>
-
-          <View style={[styles.codeHighlightContainer, styles.navigationFilename]}>
-            <MonoText style={styles.codeHighlightText}>navigation/MainTabNavigator.js</MonoText>
-          </View>
+        {this.state.deviceId !="" && <View>
+          <LocationA />
+          <Text style={{fontSize: 20, position: "absolute", top: 30, right:20, color: "red"}}>
+            Device ID: {this.state.deviceId}
+          </Text>
         </View>
+        }
+        {this.state.deviceId == "" && <View style={{ position: "absolute", top: 40}}>
+          <Text> 
+            No Device ID, please input Device ID:</Text>
+          <TextInput style={styles.input}
+            // underlineColorAndroid="transparent"
+            placeholder="Device ID"
+            // placeholderTextColor="#9a73ef"s
+            autoCapitalize="none" 
+            onChangeText = {this.handleDeviceId}/>
+          <TouchableOpacity
+            style={styles.submitButton}
+            onPress={
+              () => this.setDeviceId(this.state.inputDeviceId)
+            }>
+            <Text style={styles.submitButtonText}> Submit </Text>
+          </TouchableOpacity>
+        </View>}
       </View>
     );
   }
@@ -102,6 +135,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 0,
+  },
+  input: {
+    margin: 15,
+    height: 40,
+    borderColor: '#7a42f4',
+    borderWidth: 1
+  },
+  submitButton: {
+    backgroundColor: '#7a42f4',
+    padding: 10,
+    margin: 15,
+    height: 40,
+  },
+  submitButtonText: {
+    color: 'white'
   },
   developmentModeText: {
     marginBottom: 20,

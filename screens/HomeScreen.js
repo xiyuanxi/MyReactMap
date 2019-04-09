@@ -14,29 +14,34 @@ import { WebBrowser } from 'expo';
 import LocationA from '../components/LocationA'
 
 import { MonoText } from '../components/StyledText';
-
+import {PEAKPOWER_MOBILE_ID} from '../constants/Main'
 
 const GOOGLE_MAPS_APIKEY = 'AIzaSyDq2gbbHtbzWzs3FFLp94bHyJYb4rloisU'
 // var DeviceInfo = require('react-native-device-info');
 
-const PEAKPOWER_MOBILE_ID =  "PEAK_POWER_MOBILE_DEVICE_ID";
+const points = [
+  {
+    name: "181 University Ave",
+    lat: 43.6492404,
+    lng: -79.3875532,
+  },
+  {
+    name: "30 Adelaide St",
+    lat: 43.6509524,
+    lng: -79.3790198,
+  },
+  {
+    name: "65 Queen",
+    lat: 43.6515567,
+    lng: 79.384461,
+  }
+];
 
 export default class HomeScreen extends React.Component {
   constructor(props) {
     super(props);
-
-    // AsyncStorage.getItem('DeviceId').then((value) => {
-    //   console.log(value)
-    //   this.setState({ deviceId: value })
-    //   // if (this.state.deviceId != value) {
-    //   //   console.log("1 this.state.deviceId =" +this.state.deviceId)
-    //   //   this.setState({ deviceId: value })
-    //   // } else {
-    //   //   console.log("2 this.state.deviceId =" +this.state.deviceId)
-    //   // }
-    // })
   }
-  // deviceId = "";
+
   state = {
     deviceId: "",
     inputDeviceId: null

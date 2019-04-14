@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { WebBrowser } from 'expo';
 import LocationA from '../components/LocationA'
+import Route from '../components/Route'
 
 import { MonoText } from '../components/StyledText';
 import {PEAKPOWER_MOBILE_ID} from '../constants/Main'
@@ -21,19 +22,28 @@ const GOOGLE_MAPS_APIKEY = 'AIzaSyDq2gbbHtbzWzs3FFLp94bHyJYb4rloisU'
 
 const points = [
   {
+    id: 1,
     name: "181 University Ave",
+    earn: 150,
+    period: "1-3pm",
     lat: 43.6492404,
     lng: -79.3875532,
   },
   {
+    id: 2,
     name: "30 Adelaide St",
+    earn: 300,
+    period: "4-5pm",
     lat: 43.6509524,
     lng: -79.3790198,
   },
   {
+    id: 3,
     name: "65 Queen",
+    earn: 350,
+    period: "5-8pm",
     lat: 43.6515567,
-    lng: 79.384461,
+    lng: -79.384461,
   }
 ];
 
@@ -75,7 +85,7 @@ export default class HomeScreen extends React.Component {
     return (
       <View style={styles.container}>
         {this.state.deviceId !="" && <View>
-          <LocationA />
+          <Route points={points}/>
           <Text style={{fontSize: 20, position: "absolute", top: 30, right:20, color: "red"}}>
             Device ID: {this.state.deviceId}
           </Text>
@@ -102,38 +112,6 @@ export default class HomeScreen extends React.Component {
     );
   }
 
-  _maybeRenderDevelopmentModeWarning() {
-    if (__DEV__) {
-      const learnMoreButton = (
-        <Text onPress={this._handleLearnMorePress} style={styles.helpLinkText}>
-          Learn more
-        </Text>
-      );
-
-      return (
-        <Text style={styles.developmentModeText}>
-          Development mode is enabled, your app will be slower but you can use useful development
-          tools. {learnMoreButton}
-        </Text>
-      );
-    } else {
-      return (
-        <Text style={styles.developmentModeText}>
-          You are not in development mode, your app will run at full speed.
-        </Text>
-      );
-    }
-  }
-
-  _handleLearnMorePress = () => {
-    WebBrowser.openBrowserAsync('https://docs.expo.io/versions/latest/guides/development-mode');
-  };
-
-  _handleHelpPress = () => {
-    WebBrowser.openBrowserAsync(
-      'https://docs.expo.io/versions/latest/guides/up-and-running.html#can-t-see-your-changes'
-    );
-  };
 }
 
 const styles = StyleSheet.create({

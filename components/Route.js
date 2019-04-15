@@ -161,7 +161,7 @@ class Route extends Component {
 
   mapPressed(e) {
     console.log("Map pressed.")
-    this.setState({selectedOrder: null, coords: []})
+    this.setState({selectedOrder: null, coords: [], status: user_status.START})
   }
 
   onOrderSelected(e) {
@@ -195,7 +195,7 @@ class Route extends Component {
   OrderComfirmView = () => {
     if (this.state.status == user_status.ORDER_SELECTED) {
       console.log("kkkkk")
-      return <View style={{height: 50}}>
+      return <View style={{height: '30%'}}>
         <Text> adfasjflksafj</Text>
       </View>
     }
@@ -203,7 +203,13 @@ class Route extends Component {
 
   render() {
     return (
-      <View>
+      <View  style={{
+        flex: 0,
+        flexDirection: 'column',
+        justifyContent: 'center',
+        height: '100%'
+        // alignItems: 'stretch',
+      }}>
       <MapView style={styles.map} customMapStyle={mapStyle} showsUserLocation={true}  initialRegion={{
        latitude:this.state.latitude,
        longitude:this.state.longitude,
@@ -249,9 +255,8 @@ class Route extends Component {
          }
       </MapView>
 
-      {/* {this.state.status==user_status.ORDER_SELECTED && this.OrderComfirmView()} */}
-
-      <PopupDialog visible={this.state.status == user_status.ORDER_PRESSED }  dialogAnimation={slideAnimation}>
+      {this.OrderComfirmView()}
+      <PopupDialog style={{height:0}} visible={this.state.status == user_status.ORDER_PRESSED }  dialogAnimation={slideAnimation}>
               {this.state.selectedOrder && <View style={styles.order}>
                 <Text style={{...styles.orderText,...{fontWeight: 'bold'}}}>Do you accept the order?</Text>
                 <Text style={styles.orderText}>{this.state.selectedOrder.name} (${this.state.selectedOrder.earn}, {this.state.selectedOrder.period})</Text>

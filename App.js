@@ -149,33 +149,33 @@ TaskManager.defineTask(LOCATION_TRACKER, ({ data, error }) => {
     return;
   }
   if (data) {
-    const { locations } = data;
-    console.log("Location data is:");
-    console.log(data);
-    if (deviceId == "")
-      AsyncStorage.getItem(PEAKPOWER_MOBILE_ID).then((value) => {
-        console.log(value)
-        if (value) deviceId = value
-      })
-      console.log("deviceId is:" + deviceId);
-    if (deviceId != "") {
-      fetch(PEAKPOWER_API_URL, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          lat: data.locations[0].coords.latitude,
-          lng: data.locations[0].coords.longitude,
-          uid: deviceId,
-          phonetime: data.locations[0].timestamp,
-        }),
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-    }
+    // const { locations } = data;
+    // console.log("Location data is:");
+    // console.log(data);
+    // if (deviceId == "")
+    //   AsyncStorage.getItem(PEAKPOWER_MOBILE_ID).then((value) => {
+    //     console.log(value)
+    //     if (value) deviceId = value
+    //   })
+    //   console.log("deviceId is:" + deviceId);
+    // if (deviceId != "") {
+    //   fetch(PEAKPOWER_API_URL, {
+    //     method: 'POST',
+    //     headers: {
+    //       Accept: 'application/json',
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({
+    //       lat: data.locations[0].coords.latitude,
+    //       lng: data.locations[0].coords.longitude,
+    //       uid: deviceId,
+    //       phonetime: data.locations[0].timestamp,
+    //     }),
+    //   })
+    //   .catch((error) => {
+    //     console.error(error);
+    //   });
+    // }
    
   }
 });

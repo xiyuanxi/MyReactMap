@@ -1,22 +1,28 @@
 import React, { Component } from "react";
-import { AppRegistry, StyleSheet, Dimensions, Image, View, StatusBar, TouchableOpacity , AsyncStorage} from "react-native";
+import {  Linking, StyleSheet, Dimensions, Image, View, StatusBar, TouchableOpacity , AsyncStorage} from "react-native";
 import { Container, Text } from "react-native";
 import PopupDialog, { SlideAnimation } from 'react-native-popup-dialog';
 import { Button } from 'react-native-paper';
 
 import MapView from 'react-native-maps';
 import Polyline from '@mapbox/polyline';
-import {PEAKPOWER_API_LOAD_URL, PEAKPOWER_MOBILE_ID} from '../constants/Main'
+import {PEAKPOWER_API_LOAD_URL, PEAKPOWER_MOBILE_ID, PEAKPOWER_API_LOAD_ORDER_URL} from '../constants/Main'
+import GetReadyView from "./GetReadyView";
+import SimulateProcess from "./SimulateProcess";
+import CongratulationsView from "./CongratulationsView";
 
 const slideAnimation = new SlideAnimation({
   slideFrom: 'bottom',
 });
 
 const user_status = {
-  START: 'start',
-  ORDER_PRESSED: 'order_pressed',
-  ORDER_SELECTED: 'order_selected',
-  ORDER_CONFIRMED: 'order_confirmed'
+  START: 0,
+  ORDER_PRESSED: 10,
+  ORDER_SELECTED: 20,
+  ORDER_CONFIRMED: 30,
+  ORDER_ARRIVED: 40,
+  ORDER_STARTED: 50,
+  ORDER_DONE: 60,
 }
 
 class Route extends Component {
@@ -24,6 +30,7 @@ class Route extends Component {
     super(props);
     
     this.state = {
+      points: [],
       latitude: 43.647757,
       longitude: -79.38689,
       error: null,
@@ -36,13 +43,45 @@ class Route extends Component {
       selectedOrder: null,
       status: user_status.START,
       distance: "",
-      duration: ""
+      duration: "",
+      summary: "",
+      region: {
+        latitude: 43.647757,
+        longitude: -79.38689,
+        latitudeDelta: 0.03,
+        longitudeDelta: 0.03
+       }
     };
 
     this.mergeLot = this.mergeLot.bind(this);
+    this.fetchOrderInfo = this.fetchOrderInfo.bind(this);
 
     this.onMarkerPress = this.onMarkerPress.bind(this)
     this.onOrderSelected = this.onOrderSelected.bind(this)
+    this.onNavigatePressed = this.onNavigatePressed.bind(this)
+    this.handleGetReadyView = this.handleGetReadyView.bind(this)
+    this.handleSimulateProcess = this.handleSimulateProcess.bind(this)
+    this.handleCongratulations = this.handleCongratulations.bind(this)
+  }
+
+  async fetchOrderInfo() {
+    try {
+      let data = await fetch(PEAKPOWER_API_LOAD_ORDER_URL, {
+        method: 'GET',
+      })
+      let respJson = await data.json();
+      console.log(respJson)
+      if(respJson.status == 0) {
+        if (respJson.orderList) this.setState({ points: respJson.orderList })
+      } else {
+        console.log(`load order api return status: ${respJson.status}`)
+        return null
+      }
+    } catch (error) {
+      console.log("load order api error.")
+      console.log(error)
+      return null
+    }
   }
 
   async loadUsersRoute() {
@@ -64,8 +103,6 @@ class Route extends Component {
           method: 'GET',
         })
         let respJson = await data.json();
-        console.log("--------------------")
-        // console.log(respJson);
         let coords = respJson.map((point, index) => {
           return  {
               latitude : point.lat,
@@ -85,7 +122,8 @@ class Route extends Component {
   }
 
   componentDidMount() {
-    
+    let ret = this.fetchOrderInfo();
+   
     navigator.geolocation.getCurrentPosition(
        (position) => {
          console.log(position)
@@ -99,7 +137,6 @@ class Route extends Component {
        (error) => this.setState({ error: error.message }),
        { enableHighAccuracy: false, timeout: 200000, maximumAge: 1000 },
      );
-
    }
 
   mergeLot(){
@@ -110,25 +147,32 @@ class Route extends Component {
          concat: concatLot
        }, () => {
          this.loadUsersRoute();
-          // this.getDirections(concatLot, this.state.cordLatitude+","+this.state.cordLongitude);
        });
      }
 
    }
+
+  refreshCurrentRegion(bounds) {
+    return {
+      latitude: (bounds.northeast.lat + bounds.southwest.lat) / 2,
+      longitude: (bounds.northeast.lng + bounds.southwest.lng) / 2,
+      latitudeDelta: (bounds.northeast.lat - bounds.southwest.lat) * 1.5,
+      longitudeDelta: (bounds.northeast.lng - bounds.southwest.lng) * 1.5,
+    }
+  }
 
   async getDirections(startLoc, destinationLoc) {
 
     console.log(startLoc);
     console.log(destinationLoc);
     try {
-      // var proxy_url = 'https://cors-anywhere.herokuapp.com/';
       var target_url = `https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc}&destination=${destinationLoc}`;
       var google_api_key = '&key=AIzaSyDq2gbbHtbzWzs3FFLp94bHyJYb4rloisU'
       let resp = await fetch(`${target_url}${google_api_key}`)
-      //  console.log(resp)
       let respJson = await resp.json();
-      // console.log(respJson)
-      this.setState({distance: respJson.routes[0].legs[0].distance.text, duration: respJson.routes[0].legs[0].duration.text})
+      let currentRoute = respJson.routes[0]
+      let region = this.refreshCurrentRegion(currentRoute.bounds)
+      this.setState({ distance: currentRoute.legs[0].distance.text, duration: currentRoute.legs[0].duration.text, summary: currentRoute.summary, region: region })
       let points = Polyline.decode(respJson.routes[0].overview_polyline.points);
       let coords = points.map((point, index) => {
         return {
@@ -149,19 +193,16 @@ class Route extends Component {
   }
 
   onMarkerPress(e) {
-    // console.log(e)
-    // console.log(this.popupDialog)
     let num = e.nativeEvent.id
     console.log(num)
-    let currentPoint = this.props.points.filter((p) => p.id == num)[0];
+    let currentPoint = this.state.points.filter((p) => p.orderID == num)[0];
     console.log(currentPoint)
     this.setState({  status: user_status.ORDER_PRESSED, selectedOrder: currentPoint })
-    // this.popupDialog.show();
   }
 
   mapPressed(e) {
     console.log("Map pressed.")
-    this.setState({selectedOrder: null, coords: [], status: user_status.START})
+    this.setState({selectedOrder: null, coords: [], status: user_status.START, region: null})
   }
 
   onOrderSelected(e) {
@@ -192,48 +233,70 @@ class Route extends Component {
     );
   }
 
+  onNavigatePressed(e) {
+    let dest = this.state.selectedOrder.lat + "," + this.state.selectedOrder.lng
+    let url = `https://www.google.com/maps/dir/?api=1&travelmode=driving&dir_action=navigate&destination=${dest}`;
+
+    Linking.canOpenURL(url).then(supported => {
+      if (!supported) {
+        console.log('Can\'t handle url: ' + url);
+      } else {
+        setTimeout(() => { this.setState({ status: user_status.ORDER_ARRIVED }) }, 2000)
+        return Linking.openURL(url);
+      }
+    }).catch(err => console.error('An error occurred', err));
+  }
+
   OrderComfirmView = () => {
     if (this.state.status == user_status.ORDER_SELECTED) {
-      console.log("kkkkk")
       return <View style={{height: '30%'}}>
-        <Text> adfasjflksafj</Text>
+        <Text style={{fontSize:16, fontWeight: 'bold'}}> Location:  {this.state.selectedOrder.buildingName}{'\n'}
+        <Text style={{color:'blue'}}> {this.state.duration}</Text> <Text style={{color:'green'}}>({this.state.distance}){'\n'} </Text>
+        Via {this.state.summary}
+        </Text>
+        <Button icon="directions-car" mode="contained" style={styles.button} onPress={this.onNavigatePressed}>CONFIRM & Navigate</Button>
       </View>
-    }
+    } else return null;
+  }
+
+  handleGetReadyView() {
+    console.log("handleGetReadyView")
+    this.setState({status: user_status.ORDER_STARTED});
+  }
+
+  handleSimulateProcess() {
+    console.log("handleGetReadyView")
+    this.setState({status: user_status.ORDER_DONE});
+  }
+
+  handleCongratulations() {
+    console.log("handleSimulateProcess")
+    this.setState({status: user_status.START});
   }
 
   render() {
+    let willRenderMapview = this.state.status < user_status.ORDER_ARRIVED
+    console.log(`willRenderMapview is ${this.state.status},${user_status.ORDER_ARRIVED},${willRenderMapview}`)
+    console.log("this.state.points = ")
+    console.log(this.state.points)
     return (
       <View  style={{
         flex: 0,
         flexDirection: 'column',
         justifyContent: 'center',
-        height: '100%'
+        height: '100%',
+        // backgroundColor:'red'
         // alignItems: 'stretch',
       }}>
-      <MapView style={styles.map} customMapStyle={mapStyle} showsUserLocation={true}  initialRegion={{
-       latitude:this.state.latitude,
-       longitude:this.state.longitude,
-       latitudeDelta: 0.03,
-       longitudeDelta: 0.03
-      }} onPress={this.mapPressed.bind(this)} >
+      {willRenderMapview &&  <MapView style={styles.map} customMapStyle={mapStyle} showsUserLocation={true}  initialRegion={this.state.region} region={this.state.region} onPress={this.mapPressed.bind(this)} >
 
-      {/* {!!this.state.latitude && !!this.state.longitude && <MapView.Marker
-         coordinate={{"latitude":this.state.latitude,"longitude":this.state.longitude}}
-         title={"Your Location"}
-       />} */}
-
-       {/* {!!this.state.cordLatitude && !!this.state.cordLongitude && <MapView.Marker
-          coordinate={{"latitude":this.state.cordLatitude,"longitude":this.state.cordLongitude}}
-          title={"Your Destination"}
-        />} */}
-
-        {!!this.props.points && this.props.points.map((p)=>{
-          let selectedMarkerStyle = this.state.selectedOrder && this.state.selectedOrder.id == p.id ? styles.markerSelected : {}
-          return <View  key={p.id}> 
+        {!!this.state.points && this.state.points.map((p)=>{
+          let selectedMarkerStyle = this.state.selectedOrder && this.state.selectedOrder.orderID == p.orderID ? styles.markerSelected : {}
+          return <View  key={p.orderID}> 
            
-          <MapView.Marker key={p.id} identifier={`${p.id}`}  coordinate={{"latitude":p.lat,"longitude":p.lng}}  onPress={this.onMarkerPress} >
+          <MapView.Marker key={p.orderID} identifier={`${p.orderID}`}  coordinate={{"latitude":p.lat,"longitude":p.lng}}  onPress={this.onMarkerPress} >
               <View style={{ ...styles.marker, ...selectedMarkerStyle }}>
-                <Text style={{ fontWeight: 'bold' }}>${p.earn}</Text><Text >{p.period}</Text>
+                <Text style={{ fontWeight: 'bold' }}>${p.price}</Text><Text >{p.continuousHour}hrs</Text>
               </View>
           </MapView.Marker></View>
         })
@@ -254,27 +317,34 @@ class Route extends Component {
           strokeColor="red"/>
          }
       </MapView>
+      }
+      {this.state.status!=user_status.ORDER_ARRIVED &&  this.OrderComfirmView()}
 
-      {this.OrderComfirmView()}
+      {this.state.status == user_status.ORDER_ARRIVED && <GetReadyView handle={this.handleGetReadyView}/>}
+
+      {this.state.status == user_status.ORDER_STARTED && <SimulateProcess startTime={new Date()} duration={240} handle={this.handleSimulateProcess}/>}
+
+      {this.state.status == user_status.ORDER_DONE && <CongratulationsView  handle={this.handleCongratulations}/>}
+
       <PopupDialog style={{height:0}} visible={this.state.status == user_status.ORDER_PRESSED }  dialogAnimation={slideAnimation}>
-              {this.state.selectedOrder && <View style={styles.order}>
-                <Text style={{...styles.orderText,...{fontWeight: 'bold'}}}>Do you accept the order?</Text>
-                <Text style={styles.orderText}>{this.state.selectedOrder.name} (${this.state.selectedOrder.earn}, {this.state.selectedOrder.period})</Text>
-                <Text> </Text>
-                {/* <Text>Hello Hello Hello Hello Hello</Text> */}
-                <View style={styles.buttonContainer} >
-                <Button icon="directions-car" mode="contained" style={styles.button} onPress={this.onOrderSelected}>
-                  Yes
-                </Button>
-                <Button icon="clear" mode="contained" style={styles.button} onPress={() => {console.log('No button pressed'); this.setState({status: user_status.START})}}>
-                  No
-                </Button>
-                </View>
-              </View>
-              }
-            </PopupDialog>
+        {this.state.selectedOrder && <View style={styles.order}>
+          <Text style={{...styles.orderText,...{fontWeight: 'bold'}}}>Do you accept the order?</Text>
+          <Text style={styles.orderText}>{this.state.selectedOrder.name} (${this.state.selectedOrder.price}, {this.state.selectedOrder.startTime}, {this.state.selectedOrder.continuousHour}Hrs)</Text>
+          <Text> </Text>
+          {/* <Text>Hello Hello Hello Hello Hello</Text> */}
+          <View style={styles.buttonContainer} >
+            <Button icon="directions-car" mode="contained" style={styles.button} onPress={this.onOrderSelected}>
+              Yes
+            </Button>
+            <Button icon="clear" mode="contained" style={styles.button} onPress={() => { this.setState({status: user_status.START})}}>
+              No
+            </Button>
+          </View>
+        </View>
+        }
+      </PopupDialog>
       </View>
-    );
+     );
   }
 }
 

@@ -14,11 +14,15 @@
     "@expo/samples": "2.1.1",
     "@mapbox/polyline": "^1.0.0",
     "expo": "^32.0.0",
+    "moment": "^2.24.0",
+    "native-echarts": "^0.5.0",
     "react": "16.5.0",
     "react-native": "https://github.com/expo/react-native/archive/sdk-32.0.0.tar.gz",
     "react-native-device-info": "^1.4.2",
+    "react-native-echarts-wrapper": "^1.2.2",
     "react-native-paper": "^2.15.2",
     "react-native-popup-dialog": "^0.18.2",
+    "react-native-progress": "^3.6.0",
     "react-navigation": "^3.0.9"
   },
   "devDependencies": {
